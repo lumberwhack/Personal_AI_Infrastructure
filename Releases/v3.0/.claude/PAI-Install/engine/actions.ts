@@ -7,10 +7,11 @@
 import { execSync, spawn } from "child_process";
 import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync, symlinkSync, unlinkSync, chmodSync, lstatSync } from "fs";
 import { homedir } from "os";
-import { join, basename } from "path";
+import { join, basename, dirname } from "path";
 import type { InstallState, EngineEventHandler, DetectionResult } from "./types";
 import { detectSystem, validateElevenLabsKey } from "./detect";
 import { generateSettingsJson } from "./config-gen";
+import { resolveShellProfile, buildPaiAliasBlock, stripExistingPaiAlias } from "./shell";
 
 /**
  * Search existing .claude directories and config locations for a given env key.
@@ -570,42 +571,24 @@ export async function runConfiguration(
     }
   }
 
-  // Set up zsh alias
+  // Set up shell alias
   await emit({ event: "progress", step: "configuration", percent: 80, detail: "Setting up shell alias..." });
 
-  const zshrcPath = join(homedir(), ".zshrc");
-  const aliasLine = `alias pai='bun ${join(paiDir, "skills", "PAI", "Tools", "pai.ts")}'`;
-  const marker = "# PAI alias";
+  const shellProfile = resolveShellProfile(state.detection);
+  const paiToolPath = join(paiDir, "skills", "PAI", "Tools", "pai.ts");
+  const aliasBlock = buildPaiAliasBlock(shellProfile.name, paiToolPath);
 
-  if (existsSync(zshrcPath)) {
-    let content = readFileSync(zshrcPath, "utf-8");
-    // Remove any existing pai alias (old CORE or PAI paths, any marker variant)
-    content = content.replace(/^#\s*(?:PAI|CORE)\s*alias.*\n.*alias pai=.*\n?/gm, "");
-    content = content.replace(/^alias pai=.*\n?/gm, "");
-    // Add fresh alias
-    content = content.trimEnd() + `\n\n${marker}\n${aliasLine}\n`;
-    writeFileSync(zshrcPath, content);
-  } else {
-    writeFileSync(zshrcPath, `${marker}\n${aliasLine}\n`);
+  if (shellProfile.name === "fish") {
+    mkdirSync(dirname(shellProfile.configPath), { recursive: true });
   }
 
-  // Set up fish shell config (if fish is installed)
-  const fishConfigPath = join(homedir(), ".config", "fish", "config.fish");
-  const fishConfigDir = join(homedir(), ".config", "fish");
-  const paiToolPath = join(paiDir, "skills", "PAI", "Tools", "pai.ts");
-  const fishFunction = `# PAI alias\nfunction pai\n    bun ${paiToolPath} $argv\nend`;
-
-  if (existsSync(fishConfigDir)) {
-    if (existsSync(fishConfigPath)) {
-      let content = readFileSync(fishConfigPath, "utf-8");
-      // Remove old PAI/CORE fish functions
-      content = content.replace(/^#\s*(?:PAI|CORE)\s*alias\nfunction pai\n.*\nend\n?/gm, "");
-      content = content.replace(/^function pai\n.*\nend\n?/gm, "");
-      content = content.trimEnd() + `\n\n${fishFunction}\n`;
-      writeFileSync(fishConfigPath, content);
-    } else {
-      writeFileSync(fishConfigPath, `${fishFunction}\n`);
-    }
+  if (existsSync(shellProfile.configPath)) {
+    let content = readFileSync(shellProfile.configPath, "utf-8");
+    content = stripExistingPaiAlias(content, shellProfile.name);
+    content = content.trimEnd() + `\n\n${aliasBlock}\n`;
+    writeFileSync(shellProfile.configPath, content);
+  } else {
+    writeFileSync(shellProfile.configPath, `${aliasBlock}\n`);
   }
 
   // Fix permissions

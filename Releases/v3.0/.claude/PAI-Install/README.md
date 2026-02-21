@@ -214,7 +214,7 @@ This ensures fresh installs get the full PAI configuration without the installer
 | `settings.json` | `~/.claude/settings.json` | Merged config (template + user fields) |
 | `.env` | `~/.config/PAI/.env` | `ELEVENLABS_API_KEY=...` |
 | `LATEST` | `~/.claude/skills/PAI/Components/Algorithm/LATEST` | Algorithm version (patched to current) |
-| Shell alias | `~/.zshrc` | `alias pai='cd ~/.claude && claude'` |
+| Shell alias | Detected shell config (`~/.zshrc`, `~/.bashrc`/`~/.bash_profile`, or `~/.config/fish/config.fish`) | `alias pai='bun ~/.claude/skills/PAI/Tools/pai.ts'` (fish uses a `function pai`) |
 
 ### Directory Structure Created
 
@@ -262,7 +262,14 @@ The Algorithm version displayed in the banner reads from `skills/PAI/Components/
 After the installer completes, open a terminal and run:
 
 ```bash
+# zsh
 source ~/.zshrc && pai
+
+# bash
+source ~/.bashrc && pai
+
+# fish
+source ~/.config/fish/config.fish && pai
 ```
 
 This reloads your shell config (activates the `pai` alias) and launches PAI for the first time.
@@ -277,7 +284,7 @@ This reloads your shell config (activates the `pai` alias) and launches PAI for 
 | Port 1337 in use | Set `PAI_INSTALL_PORT=8080` before running install.sh |
 | ElevenLabs key invalid | Verify at elevenlabs.io — ensure no trailing spaces, key starts with `xi-` or `sk_` |
 | Permission denied | Run `chmod -R 755 ~/.claude` |
-| `pai` command not found | Run `source ~/.zshrc` to reload shell config |
+| `pai` command not found | Reload your shell config (`source ~/.zshrc`, `source ~/.bashrc`, or `source ~/.config/fish/config.fish`) |
 | Voice server won't start | Check port 8888 is free: `lsof -ti:8888`. Kill any process using it. |
 | Banner shows wrong algorithm version | Check `~/.claude/skills/PAI/Components/Algorithm/LATEST` contains correct version |
 | Banner counts all show 0 | Normal on first launch — counts populate after your first Claude Code session ends |

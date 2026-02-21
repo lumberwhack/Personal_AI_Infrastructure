@@ -389,7 +389,8 @@ cd ~/.claude && ./PAI-Install/install.sh
 
 The installer auto-detects your shell and configures the appropriate file:
 - **zsh** -- `~/.zshrc`
-- **bash** -- `~/.bashrc`
+- **bash** -- `~/.bashrc` (or `~/.bash_profile` if that's your active bash config)
+- **fish** -- `~/.config/fish/config.fish`
 
 ---
 

@@ -359,6 +359,7 @@ function renderValidation(checks) {
 function renderSummary(summary) {
   const chat = document.getElementById('chat-messages');
   if (!chat) return;
+  const activation = summary.activationCommand || 'source ~/.zshrc && pai';
 
   const card = document.createElement('div');
   card.className = 'summary-card';
@@ -372,7 +373,7 @@ function renderSummary(summary) {
     <div class="summary-row"><span class="s-label">Install Type</span><span class="s-value">${summary.installType}</span></div>
     <div class="summary-action">
       <p>To activate PAI, open a terminal and run:</p>
-      <code>source ~/.zshrc && pai</code>
+      <code>${activation}</code>
       <p class="summary-hint">This reloads your shell config and launches PAI for the first time.</p>
     </div>
   `;

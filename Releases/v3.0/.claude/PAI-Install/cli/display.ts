@@ -147,6 +147,8 @@ export function printValidation(checks: ValidationCheck[]): void {
 }
 
 export function printSummary(summary: InstallSummary): void {
+  const activation = summary.activationCommand || "source ~/.zshrc && pai";
+
   print("");
   print(`${c.navy}╔══════════════════════════════════════════════════╗${c.reset}`);
   print(`${c.navy}║${c.reset}  ${c.green}${c.bold}SYSTEM ONLINE${c.reset}                                    ${c.navy}║${c.reset}`);
@@ -159,7 +161,7 @@ export function printSummary(summary: InstallSummary): void {
   print(`${c.navy}║${c.reset}  Install Type: ${c.white}${summary.installType}${c.reset}${" ".repeat(Math.max(0, 33 - summary.installType.length))}${c.navy}║${c.reset}`);
   print(`${c.navy}╠══════════════════════════════════════════════════╣${c.reset}`);
   print(`${c.navy}║${c.reset}                                                  ${c.navy}║${c.reset}`);
-  print(`${c.navy}║${c.reset}  ${c.lightBlue}Run: ${c.bold}source ~/.zshrc && pai${c.reset}                      ${c.navy}║${c.reset}`);
+  print(`${c.navy}║${c.reset}  ${c.lightBlue}Run: ${c.bold}${activation}${c.reset}                      ${c.navy}║${c.reset}`);
   print(`${c.navy}║${c.reset}                                                  ${c.navy}║${c.reset}`);
   print(`${c.navy}╚══════════════════════════════════════════════════╝${c.reset}`);
   print("");

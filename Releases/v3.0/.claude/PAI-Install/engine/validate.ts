@@ -7,6 +7,7 @@ import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import type { InstallState, ValidationCheck, InstallSummary } from "./types";
 import { homedir } from "os";
+import { resolveShellProfile, hasPaiAlias } from "./shell";
 
 /**
  * Check if voice server is running via HTTP health check.
@@ -166,20 +167,22 @@ export async function runValidation(state: InstallState): Promise<ValidationChec
     critical: false,
   });
 
-  // 8. Zsh alias configured
-  const zshrcPath = join(homedir(), ".zshrc");
+  // 8. Shell alias configured
+  const shellProfile = resolveShellProfile(state.detection);
   let aliasConfigured = false;
-  if (existsSync(zshrcPath)) {
+  if (existsSync(shellProfile.configPath)) {
     try {
-      const zshContent = readFileSync(zshrcPath, "utf-8");
-      aliasConfigured = zshContent.includes("# PAI alias") && zshContent.includes("alias pai=");
+      const shellContent = readFileSync(shellProfile.configPath, "utf-8");
+      aliasConfigured = hasPaiAlias(shellContent, shellProfile.name);
     } catch {}
   }
 
   checks.push({
     name: "Shell alias (pai)",
     passed: aliasConfigured,
-    detail: aliasConfigured ? "Configured in .zshrc" : "Not found — run: source ~/.zshrc",
+    detail: aliasConfigured
+      ? `Configured in ${shellProfile.configPathDisplay}`
+      : `Not found in ${shellProfile.configPathDisplay} — run: ${shellProfile.activationCommand}`,
     critical: true,
   });
 
@@ -190,6 +193,8 @@ export async function runValidation(state: InstallState): Promise<ValidationChec
  * Generate install summary from state.
  */
 export function generateSummary(state: InstallState): InstallSummary {
+  const shellProfile = resolveShellProfile(state.detection);
+
   return {
     paiVersion: "3.0",
     principalName: state.collected.principalName || "User",
@@ -201,5 +206,8 @@ export function generateSummary(state: InstallState): InstallSummary {
     installType: state.installType || "fresh",
     completedSteps: state.completedSteps.length,
     totalSteps: 8,
+    shellName: shellProfile.name,
+    shellConfigPath: shellProfile.configPathDisplay,
+    activationCommand: shellProfile.activationCommand,
   };
 }

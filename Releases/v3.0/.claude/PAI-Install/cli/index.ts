@@ -219,7 +219,7 @@ export async function runCLI(): Promise<void> {
     clearState();
 
     print(`  ${c.green}${c.bold}Installation complete!${c.reset}`);
-    print(`  ${c.gray}Run ${c.bold}source ~/.zshrc && pai${c.reset}${c.gray} to launch PAI.${c.reset}`);
+    print(`  ${c.gray}Run ${c.bold}${summary.activationCommand}${c.reset}${c.gray} to launch PAI.${c.reset}`);
     print("");
 
     process.exit(0);

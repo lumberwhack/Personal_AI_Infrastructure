@@ -18,7 +18,15 @@ That's it. The script installs Bun (if needed), then walks you through setup:
 After the wizard finishes, activate the `pai` command and launch:
 
 ```bash
+# zsh
 source ~/.zshrc
+
+# bash
+source ~/.bashrc
+
+# fish
+source ~/.config/fish/config.fish
+
 pai
 ```
 
