@@ -48,6 +48,11 @@ function toDisplayPath(path: string, home: string): string {
   return path.startsWith(home + "/") ? "~" + path.slice(home.length) : path;
 }
 
+function quotePath(path: string): string {
+  const escaped = path.replace(/\\/g, "\\\\").replace(/"/g, '\\"');
+  return `"${escaped}"`;
+}
+
 export function resolveShellProfile(detection?: DetectionResult | null): ShellProfile {
   const home = homedir();
   const detectedKind =
@@ -72,10 +77,11 @@ export function resolveShellProfile(detection?: DetectionResult | null): ShellPr
 }
 
 export function buildAliasBlock(profile: ShellProfile, paiToolPath: string): string {
+  const quotedToolPath = quotePath(paiToolPath);
   if (profile.kind === "fish") {
-    return `# PAI alias\nfunction pai\n    bun ${paiToolPath} $argv\nend`;
+    return `# PAI alias\nfunction pai\n    bun ${quotedToolPath} $argv\nend`;
   }
-  return `# PAI alias\nalias pai='bun ${paiToolPath}'`;
+  return `# PAI alias\nalias pai='bun ${quotedToolPath}'`;
 }
 
 export function stripExistingAlias(content: string, profile: ShellProfile): string {
