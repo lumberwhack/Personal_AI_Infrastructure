@@ -7,11 +7,10 @@
 import { execSync, spawn } from "child_process";
 import { existsSync, mkdirSync, writeFileSync, readFileSync, readdirSync, symlinkSync, unlinkSync, chmodSync, lstatSync } from "fs";
 import { homedir } from "os";
-import { join, basename, dirname } from "path";
+import { join, basename } from "path";
 import type { InstallState, EngineEventHandler, DetectionResult } from "./types";
 import { detectSystem, validateElevenLabsKey } from "./detect";
 import { generateSettingsJson } from "./config-gen";
-import { resolveShellProfile, buildPaiAliasBlock, stripExistingPaiAlias } from "./shell";
 
 /**
  * Search existing .claude directories and config locations for a given env key.
@@ -573,22 +572,49 @@ export async function runConfiguration(
 
   // Set up shell alias
   await emit({ event: "progress", step: "configuration", percent: 80, detail: "Setting up shell alias..." });
+  const shellName = (state.detection?.shell?.name || "").toLowerCase();
+  const home = homedir();
+  const zshrcPath = join(home, ".zshrc");
+  const bashrcPath = join(home, ".bashrc");
+  const bashProfilePath = join(home, ".bash_profile");
+  const fishConfigDir = join(home, ".config", "fish");
+  const fishConfigPath = join(fishConfigDir, "config.fish");
+  const isFishShell = shellName.includes("fish");
+  const isBashShell = shellName.includes("bash");
+  const shellConfigPath = isFishShell
+    ? fishConfigPath
+    : isBashShell
+      ? (existsSync(bashrcPath) ? bashrcPath : existsSync(bashProfilePath) ? bashProfilePath : bashrcPath)
+      : zshrcPath;
 
-  const shellProfile = resolveShellProfile(state.detection);
   const paiToolPath = join(paiDir, "skills", "PAI", "Tools", "pai.ts");
-  const aliasBlock = buildPaiAliasBlock(shellProfile.name, paiToolPath);
 
-  if (shellProfile.name === "fish") {
-    mkdirSync(dirname(shellProfile.configPath), { recursive: true });
-  }
+  if (isFishShell) {
+    mkdirSync(fishConfigDir, { recursive: true });
+    const fishFunction = `# PAI alias\nfunction pai\n    bun ${paiToolPath} $argv\nend`;
 
-  if (existsSync(shellProfile.configPath)) {
-    let content = readFileSync(shellProfile.configPath, "utf-8");
-    content = stripExistingPaiAlias(content, shellProfile.name);
-    content = content.trimEnd() + `\n\n${aliasBlock}\n`;
-    writeFileSync(shellProfile.configPath, content);
+    if (existsSync(shellConfigPath)) {
+      let content = readFileSync(shellConfigPath, "utf-8");
+      content = content.replace(/^#\s*(?:PAI|CORE)\s*alias.*\nfunction pai\n(?:[^\n]*\n)*?end\n?/gm, "");
+      content = content.replace(/^function pai\n(?:[^\n]*\n)*?end\n?/gm, "");
+      content = content.trimEnd() + `\n\n${fishFunction}\n`;
+      writeFileSync(shellConfigPath, content);
+    } else {
+      writeFileSync(shellConfigPath, `${fishFunction}\n`);
+    }
   } else {
-    writeFileSync(shellProfile.configPath, `${aliasBlock}\n`);
+    const aliasLine = `alias pai='bun ${paiToolPath}'`;
+    const marker = "# PAI alias";
+
+    if (existsSync(shellConfigPath)) {
+      let content = readFileSync(shellConfigPath, "utf-8");
+      content = content.replace(/^#\s*(?:PAI|CORE)\s*alias.*\n.*alias pai=.*\n?/gm, "");
+      content = content.replace(/^alias pai=.*\n?/gm, "");
+      content = content.trimEnd() + `\n\n${marker}\n${aliasLine}\n`;
+      writeFileSync(shellConfigPath, content);
+    } else {
+      writeFileSync(shellConfigPath, `${marker}\n${aliasLine}\n`);
+    }
   }
 
   // Fix permissions
