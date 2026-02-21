@@ -12,7 +12,7 @@ That's it. The script handles everything:
 
 1. Detects your operating system and installed tools
 2. Installs **Bun** and **Git** if missing
-3. Launches a guided Web UI installer
+3. Launches a guided installer (GUI on desktop, CLI in headless terminals)
 4. Walks you through identity, voice, and configuration
 5. Validates the installation before finishing
 
@@ -79,11 +79,13 @@ The installer supports three modes via `main.ts`:
 
 | Mode | Command | Description |
 |------|---------|-------------|
-| **GUI** (default) | `--mode gui` | Launches Electron window wrapping the web server. Audio autoplay works. This is what `install.sh` uses. |
+| **GUI** | `--mode gui` | Launches Electron window wrapping the web server. Audio autoplay works. |
 | **Web** | `--mode web` | Starts the Bun HTTP/WebSocket server on port 1337. Open in any browser. |
 | **CLI** | `--mode cli` | Terminal-only wizard with ANSI colors and progress bars. No browser needed. |
 
-GUI mode auto-installs Electron dependencies on first run and clears macOS quarantine flags.
+`install.sh` auto-selects mode: GUI when a display is available, CLI in headless/terminal-only environments. You can always override with `--mode`.
+
+GUI mode auto-installs Electron dependencies on first run and clears macOS quarantine flags. If GUI launch fails, the installer falls back to CLI (interactive terminals) or Web mode (non-interactive sessions).
 
 ### Directory Structure
 
@@ -321,7 +323,7 @@ bun run PAI-Install/main.ts --mode gui
 - **Internet connection required** — Downloads tools, clones repository, validates API keys
 - **Voice requires ElevenLabs** — Voice synthesis is optional but needs an ElevenLabs API key
 - **Single-user** — Installs to `~/.claude/` for the current user only
-- **Electron optional** — If Electron fails to install, use `--mode web` as fallback
+- **Electron optional** — If GUI dependencies fail, installer falls back automatically (CLI on interactive terminals, Web on non-interactive sessions)
 
 ## License
 

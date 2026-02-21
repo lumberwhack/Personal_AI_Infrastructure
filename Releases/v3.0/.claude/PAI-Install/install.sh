@@ -151,6 +151,66 @@ else
   exit 1
 fi
 
-info "Launching installer..."
+# Determine launch mode
+# Priority: --mode flag > PAI_INSTALL_MODE env > auto-detect
+REQUESTED_MODE="${PAI_INSTALL_MODE:-}"
+FORWARD_ARGS=()
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --mode)
+      if [[ $# -lt 2 ]]; then
+        error "--mode requires a value: gui, cli, or web"
+        exit 1
+      fi
+      REQUESTED_MODE="$2"
+      shift 2
+      ;;
+    --mode=*)
+      REQUESTED_MODE="${1#*=}"
+      shift
+      ;;
+    *)
+      FORWARD_ARGS+=("$1")
+      shift
+      ;;
+  esac
+done
+
+if [[ -z "$REQUESTED_MODE" ]]; then
+  if [[ "$OS" == "Linux" ]]; then
+    # No display server means terminal-only/headless environment.
+    if [[ -z "${DISPLAY:-}" && -z "${WAYLAND_DISPLAY:-}" ]]; then
+      REQUESTED_MODE="cli"
+    else
+      REQUESTED_MODE="gui"
+    fi
+  elif [[ "$OS" == "Darwin" ]]; then
+    # SSH macOS sessions are typically terminal-only.
+    if [[ -n "${SSH_CONNECTION:-}" || -n "${SSH_TTY:-}" ]]; then
+      REQUESTED_MODE="cli"
+    else
+      REQUESTED_MODE="gui"
+    fi
+  else
+    REQUESTED_MODE="gui"
+  fi
+fi
+
+case "$REQUESTED_MODE" in
+  gui|cli|web) ;;
+  *)
+    error "Invalid mode: $REQUESTED_MODE (expected: gui, cli, or web)"
+    exit 1
+    ;;
+esac
+
+if [[ "$REQUESTED_MODE" == "cli" ]]; then
+  info "Launching installer in CLI mode"
+elif [[ "$REQUESTED_MODE" == "web" ]]; then
+  info "Launching installer in Web mode"
+else
+  info "Launching installer in GUI mode"
+fi
 echo ""
-exec bun run "$INSTALLER_DIR/main.ts" --mode gui
+exec bun run "$INSTALLER_DIR/main.ts" --mode "$REQUESTED_MODE" "${FORWARD_ARGS[@]}"

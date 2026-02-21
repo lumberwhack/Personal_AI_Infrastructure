@@ -13,13 +13,60 @@ import { spawn, spawnSync, execSync } from "child_process";
 import { join } from "path";
 import { existsSync } from "fs";
 
+type InstallMode = "gui" | "web" | "cli";
+
+function parseMode(argv: string[]): InstallMode {
+  let requested: string | undefined;
+  let sawModeFlag = false;
+
+  for (let i = 0; i < argv.length; i++) {
+    const arg = argv[i];
+    if (arg === "--mode") {
+      sawModeFlag = true;
+      requested = argv[i + 1];
+      break;
+    }
+    if (arg.startsWith("--mode=")) {
+      sawModeFlag = true;
+      requested = arg.slice("--mode=".length);
+      break;
+    }
+  }
+
+  if (!sawModeFlag) return "gui";
+  if (!requested) {
+    throw new Error("Missing --mode value. Expected: gui, cli, or web.");
+  }
+  if (requested === "gui" || requested === "web" || requested === "cli") return requested;
+
+  throw new Error(`Invalid mode "${requested}". Expected: gui, cli, or web.`);
+}
+
 const args = process.argv.slice(2);
-const modeIdx = args.indexOf("--mode");
-const mode = modeIdx >= 0 ? args[modeIdx + 1] : "gui";
 
 const ROOT = import.meta.dir;
 
+function hasInteractiveTTY(): boolean {
+  return Boolean(process.stdin.isTTY && process.stdout.isTTY);
+}
+
+async function fallbackFromGui(reason: string): Promise<void> {
+  console.error(`${reason}\n`);
+
+  if (hasInteractiveTTY()) {
+    console.log("Falling back to CLI installer...\n");
+    const { runCLI } = await import("./cli/index");
+    await runCLI();
+    return;
+  }
+
+  console.log("No interactive terminal detected. Falling back to web installer...\n");
+  await import("./web/server");
+}
+
 async function main() {
+  const mode = parseMode(args);
+
   if (mode === "cli") {
     // Run CLI wizard
     const { runCLI } = await import("./cli/index");
@@ -40,9 +87,7 @@ async function main() {
         stdio: "inherit",
       });
       if (install.status !== 0) {
-        console.error("Failed to install GUI dependencies. Falling back to CLI...\n");
-        const { runCLI } = await import("./cli/index");
-        await runCLI();
+        await fallbackFromGui("Failed to install GUI dependencies.");
         return;
       }
     }
@@ -63,8 +108,28 @@ async function main() {
       stdio: "inherit",
     });
 
-    child.on("exit", (code) => {
-      process.exit(code || 0);
+    let handledFailure = false;
+    const handleFailure = async (message: string) => {
+      if (handledFailure) return;
+      handledFailure = true;
+      await fallbackFromGui(message);
+    };
+
+    child.on("error", (err) => {
+      void handleFailure(`Failed to launch GUI installer: ${err.message}`);
+    });
+
+    child.on("exit", (code, signal) => {
+      if (code === 0) {
+        process.exit(0);
+        return;
+      }
+
+      const detail =
+        typeof code === "number"
+          ? `GUI installer exited with code ${code}.`
+          : `GUI installer exited unexpectedly${signal ? ` (signal: ${signal})` : ""}.`;
+      void handleFailure(detail);
     });
   }
 }
