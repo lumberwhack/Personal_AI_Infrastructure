@@ -85,7 +85,9 @@ The installer supports three modes via `main.ts`:
 
 `install.sh` auto-selects mode: GUI when a display is available, CLI in headless/terminal-only environments. You can always override with `--mode`.
 
-GUI mode auto-installs Electron dependencies on first run and clears macOS quarantine flags. If GUI launch fails, the installer falls back to CLI (interactive terminals) or Web mode (non-interactive sessions).
+You can also set `PAI_INSTALL_MODE=gui|web|cli` to override auto-detection without passing `--mode`.
+
+GUI mode auto-installs Electron dependencies on first run and clears macOS quarantine flags. If GUI launch fails, the installer falls back to CLI when both stdin and stdout are TTYs (interactive terminal), or Web mode otherwise.
 
 ### Directory Structure
 

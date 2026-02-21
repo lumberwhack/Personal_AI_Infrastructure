@@ -186,7 +186,7 @@ if [[ -z "$REQUESTED_MODE" ]]; then
       REQUESTED_MODE="gui"
     fi
   elif [[ "$OS" == "Darwin" ]]; then
-    # SSH macOS sessions are typically terminal-only.
+    # macOS via SSH: no local desktop session, force CLI.
     if [[ -n "${SSH_CONNECTION:-}" || -n "${SSH_TTY:-}" ]]; then
       REQUESTED_MODE="cli"
     else

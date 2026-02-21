@@ -33,6 +33,8 @@ function parseMode(argv: string[]): InstallMode {
     }
   }
 
+  // Default applies when main.ts is invoked directly without --mode.
+  // PAI_INSTALL_MODE is handled by install.sh before delegating to this file.
   if (!sawModeFlag) return "gui";
   if (!requested) {
     throw new Error("Missing --mode value. Expected: gui, cli, or web.");
@@ -116,7 +118,7 @@ async function main() {
     };
 
     child.on("error", (err) => {
-      void handleFailure(`Failed to launch GUI installer: ${err.message}`);
+      handleFailure(`Failed to launch GUI installer: ${err.message}`).catch(console.error);
     });
 
     child.on("exit", (code, signal) => {
@@ -129,7 +131,7 @@ async function main() {
         typeof code === "number"
           ? `GUI installer exited with code ${code}.`
           : `GUI installer exited unexpectedly${signal ? ` (signal: ${signal})` : ""}.`;
-      void handleFailure(detail);
+      handleFailure(detail).catch(console.error);
     });
   }
 }
