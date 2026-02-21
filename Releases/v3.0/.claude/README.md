@@ -24,6 +24,12 @@ source ~/.zshrc
 # bash
 source ~/.bashrc
 
+# bash (if your profile file is used instead of .bashrc)
+source ~/.bash_profile
+
+# bash (fallback profile)
+source ~/.profile
+
 # fish
 source ~/.config/fish/config.fish
 

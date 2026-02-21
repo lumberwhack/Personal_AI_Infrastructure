@@ -7,47 +7,7 @@ import { existsSync, readFileSync } from "fs";
 import { join } from "path";
 import type { InstallState, ValidationCheck, InstallSummary } from "./types";
 import { homedir } from "os";
-
-function resolveShellConfig(detection: InstallState["detection"]): {
-  configPath: string;
-  configPathDisplay: string;
-  isFish: boolean;
-  activationCommand: string;
-} {
-  const home = homedir();
-  const shellName = (detection?.shell?.name || "").toLowerCase();
-  const isFish = shellName.includes("fish");
-  const isBash = shellName.includes("bash");
-
-  const zshrcPath = join(home, ".zshrc");
-  const bashrcPath = join(home, ".bashrc");
-  const bashProfilePath = join(home, ".bash_profile");
-  const fishConfigPath = join(home, ".config", "fish", "config.fish");
-
-  const configPath = isFish
-    ? fishConfigPath
-    : isBash
-      ? (existsSync(bashrcPath) ? bashrcPath : existsSync(bashProfilePath) ? bashProfilePath : bashrcPath)
-      : zshrcPath;
-
-  const configPathDisplay = configPath.startsWith(home + "/")
-    ? "~" + configPath.slice(home.length)
-    : configPath;
-
-  return {
-    configPath,
-    configPathDisplay,
-    isFish,
-    activationCommand: `source ${configPathDisplay} && pai`,
-  };
-}
-
-function hasPaiAlias(content: string, isFish: boolean): boolean {
-  if (isFish) {
-    return content.includes("# PAI alias") && content.includes("function pai");
-  }
-  return content.includes("# PAI alias") && content.includes("alias pai=");
-}
+import { resolveShellProfile, hasAlias } from "./shell";
 
 /**
  * Check if voice server is running via HTTP health check.
@@ -208,12 +168,12 @@ export async function runValidation(state: InstallState): Promise<ValidationChec
   });
 
   // 8. Shell alias configured
-  const shellConfig = resolveShellConfig(state.detection);
+  const shellProfile = resolveShellProfile(state.detection);
   let aliasConfigured = false;
-  if (existsSync(shellConfig.configPath)) {
+  if (existsSync(shellProfile.configPath)) {
     try {
-      const shellContent = readFileSync(shellConfig.configPath, "utf-8");
-      aliasConfigured = hasPaiAlias(shellContent, shellConfig.isFish);
+      const shellContent = readFileSync(shellProfile.configPath, "utf-8");
+      aliasConfigured = hasAlias(shellContent, shellProfile);
     } catch {}
   }
 
@@ -221,8 +181,8 @@ export async function runValidation(state: InstallState): Promise<ValidationChec
     name: "Shell alias (pai)",
     passed: aliasConfigured,
     detail: aliasConfigured
-      ? `Configured in ${shellConfig.configPathDisplay}`
-      : `Not found in ${shellConfig.configPathDisplay} — run: ${shellConfig.activationCommand}`,
+      ? `Configured in ${shellProfile.configPathDisplay}`
+      : `Not found in ${shellProfile.configPathDisplay} — run: ${shellProfile.activationCommand}`,
     critical: true,
   });
 
@@ -233,7 +193,7 @@ export async function runValidation(state: InstallState): Promise<ValidationChec
  * Generate install summary from state.
  */
 export function generateSummary(state: InstallState): InstallSummary {
-  const shellConfig = resolveShellConfig(state.detection);
+  const shellProfile = resolveShellProfile(state.detection);
 
   return {
     paiVersion: "3.0",
@@ -246,6 +206,8 @@ export function generateSummary(state: InstallState): InstallSummary {
     installType: state.installType || "fresh",
     completedSteps: state.completedSteps.length,
     totalSteps: 8,
-    activationCommand: shellConfig.activationCommand,
+    shellName: shellProfile.kind,
+    shellConfigPath: shellProfile.configPathDisplay,
+    activationCommand: shellProfile.activationCommand,
   };
 }

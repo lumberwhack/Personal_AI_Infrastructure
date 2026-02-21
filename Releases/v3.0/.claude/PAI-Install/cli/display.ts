@@ -147,7 +147,8 @@ export function printValidation(checks: ValidationCheck[]): void {
 }
 
 export function printSummary(summary: InstallSummary): void {
-  const activation = summary.activationCommand || "source ~/.zshrc && pai";
+  const activation = summary.activationCommand
+    || (summary.shellConfigPath ? `source ${summary.shellConfigPath} && pai` : "source <your-shell-config> && pai");
 
   print("");
   print(`${c.navy}╔══════════════════════════════════════════════════╗${c.reset}`);
@@ -164,5 +165,8 @@ export function printSummary(summary: InstallSummary): void {
   print(`${c.navy}║${c.reset}  ${c.lightBlue}Run: ${c.bold}${activation}${c.reset}                      ${c.navy}║${c.reset}`);
   print(`${c.navy}║${c.reset}                                                  ${c.navy}║${c.reset}`);
   print(`${c.navy}╚══════════════════════════════════════════════════╝${c.reset}`);
+  if (summary.shellConfigPath) {
+    print(`  ${c.gray}Shell config: ${summary.shellConfigPath}${c.reset}`);
+  }
   print("");
 }

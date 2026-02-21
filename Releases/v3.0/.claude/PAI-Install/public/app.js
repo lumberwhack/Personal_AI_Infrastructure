@@ -359,7 +359,8 @@ function renderValidation(checks) {
 function renderSummary(summary) {
   const chat = document.getElementById('chat-messages');
   if (!chat) return;
-  const activation = summary.activationCommand || 'source ~/.zshrc && pai';
+  const activation = summary.activationCommand
+    || (summary.shellConfigPath ? `source ${summary.shellConfigPath} && pai` : 'source <your-shell-config> && pai');
 
   const card = document.createElement('div');
   card.className = 'summary-card';
@@ -371,6 +372,8 @@ function renderSummary(summary) {
     <div class="summary-row"><span class="s-label">Timezone</span><span class="s-value">${summary.timezone}</span></div>
     <div class="summary-row"><span class="s-label">Voice</span><span class="s-value">${summary.voiceEnabled ? summary.voiceMode : 'Disabled'}</span></div>
     <div class="summary-row"><span class="s-label">Install Type</span><span class="s-value">${summary.installType}</span></div>
+    <div class="summary-row"><span class="s-label">Shell</span><span class="s-value">${summary.shellName || 'detected'}</span></div>
+    <div class="summary-row"><span class="s-label">Config Path</span><span class="s-value">${summary.shellConfigPath || 'N/A'}</span></div>
     <div class="summary-action">
       <p>To activate PAI, open a terminal and run:</p>
       <code>${activation}</code>

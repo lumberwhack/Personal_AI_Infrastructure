@@ -10,3 +10,4 @@ export * from "./state";
 export * from "./actions";
 export * from "./config-gen";
 export * from "./validate";
+export * from "./shell";

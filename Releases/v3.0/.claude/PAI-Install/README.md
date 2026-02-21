@@ -214,7 +214,7 @@ This ensures fresh installs get the full PAI configuration without the installer
 | `settings.json` | `~/.claude/settings.json` | Merged config (template + user fields) |
 | `.env` | `~/.config/PAI/.env` | `ELEVENLABS_API_KEY=...` |
 | `LATEST` | `~/.claude/skills/PAI/Components/Algorithm/LATEST` | Algorithm version (patched to current) |
-| Shell alias | Detected shell config (`~/.zshrc`, `~/.bashrc`/`~/.bash_profile`, or `~/.config/fish/config.fish`) | `alias pai='bun ~/.claude/skills/PAI/Tools/pai.ts'` (fish uses a `function pai`) |
+| Shell alias | Detected shell config (`~/.zshrc`, `~/.bashrc`/`~/.bash_profile`/`~/.profile`, or `~/.config/fish/config.fish`) | `alias pai='bun ~/.claude/skills/PAI/Tools/pai.ts'` (fish uses a `function pai`) |
 
 ### Directory Structure Created
 
@@ -268,6 +268,12 @@ source ~/.zshrc && pai
 # bash
 source ~/.bashrc && pai
 
+# bash (if your profile file is used instead of .bashrc)
+source ~/.bash_profile && pai
+
+# bash (fallback profile)
+source ~/.profile && pai
+
 # fish
 source ~/.config/fish/config.fish && pai
 ```
@@ -284,7 +290,7 @@ This reloads your shell config (activates the `pai` alias) and launches PAI for 
 | Port 1337 in use | Set `PAI_INSTALL_PORT=8080` before running install.sh |
 | ElevenLabs key invalid | Verify at elevenlabs.io — ensure no trailing spaces, key starts with `xi-` or `sk_` |
 | Permission denied | Run `chmod -R 755 ~/.claude` |
-| `pai` command not found | Reload your shell config (`source ~/.zshrc`, `source ~/.bashrc`, or `source ~/.config/fish/config.fish`) |
+| `pai` command not found | Reload your shell config (`source ~/.zshrc`, `source ~/.bashrc`, `source ~/.bash_profile`, `source ~/.profile`, or `source ~/.config/fish/config.fish`) |
 | Voice server won't start | Check port 8888 is free: `lsof -ti:8888`. Kill any process using it. |
 | Banner shows wrong algorithm version | Check `~/.claude/skills/PAI/Components/Algorithm/LATEST` contains correct version |
 | Banner counts all show 0 | Normal on first launch — counts populate after your first Claude Code session ends |
